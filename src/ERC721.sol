@@ -5,6 +5,7 @@ pragma solidity ^0.8.6;
 error NotAuthorized();
 error WrongAddress();
 error TokenAlreadyMinted();
+error HaveNotMinted();
 
 /// @notice an opinionated ERC721 implementation
 /// @title ERC721
@@ -140,6 +141,21 @@ contract ERC721 {
         }
 
         emit Transfer(address(0), to, tokenId);
+    }
+
+    function _burn(uint256 tokenId) internal virtual {
+        address owner = _ownerOf[tokenId];
+
+        if (msg.sender != owner) revert NotAuthorized();
+        if (owner == address(0)) revert HaveNotMinted();
+
+        delete _ownerOf[tokenId];
+
+        unchecked {
+            _balanceOf[owner]--;
+        }
+
+        emit Transfer(owner, address(0), tokenId);
     }
 }
 
