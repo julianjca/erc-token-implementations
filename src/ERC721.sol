@@ -3,6 +3,7 @@ pragma solidity ^0.8.6;
 
 // custom errors
 error NotAuthorized();
+error WrongAddress();
 
 /// @notice an opinionated ERC721 implementation
 /// @title ERC721
@@ -19,7 +20,7 @@ contract ERC721 {
     //////////////////////////////////////////////////////////////*/
     mapping(address => uint256) private _balanceOf;
     mapping(uint256 => address) private _ownerOf;
-    mapping(uint256 => address) public isApproved;
+    mapping(uint256 => address) public getApproved;
     mapping(address => mapping(address => bool)) public isApprovedForAll;
 
     // https://ethereum.stackexchange.com/questions/8658/what-does-the-indexed-keyword-do
@@ -70,8 +71,52 @@ contract ERC721 {
             revert NotAuthorized();
         }
 
-        isApproved[_tokenId] = _approved;
+        getApproved[_tokenId] = _approved;
 
         emit Approval(tokenOwner, _approved, _tokenId);
+    }
+
+    function setApprovalForAll(address _operator, bool _approved) external {
+        isApprovedForAll[msg.sender][_operator] = _approved;
+
+        emit ApprovalForAll(msg.sender, _operator, _approved);
+    }
+
+    /// @notice Transfer ownership of an NFT -- THE CALLER IS RESPONSIBLE
+    ///  TO CONFIRM THAT `_to` IS CAPABLE OF RECEIVING NFTS OR ELSE
+    ///  THEY MAY BE PERMANENTLY LOST
+    /// @dev Throws unless `msg.sender` is the current owner, an authorized
+    ///  operator, or the approved address for this NFT. Throws if `_from` is
+    ///  not the current owner. Throws if `_to` is the zero address. Throws if
+    ///  `_tokenId` is not a valid NFT.
+    /// @param _from The current owner of the NFT
+    /// @param _to The new owner
+    /// @param _tokenId The NFT to transfer
+    function transferFrom(
+        address _from,
+        address _to,
+        uint256 _tokenId
+    ) external payable {
+        address owner = _ownerOf[_tokenId];
+
+        // avoid transferring to the current owner or zero address
+        if (_to == owner || _to == address(0)) revert WrongAddress();
+
+        if (
+            msg.sender != owner ||
+            getApproved[_tokenId] != msg.sender ||
+            isApprovedForAll[_from][msg.sender]
+        ) {
+            revert NotAuthorized();
+        }
+
+        _ownerOf[_tokenId] = _to;
+
+        unchecked {
+            _balanceOf[_from]--;
+            _balanceOf[_to]++;
+        }
+
+        emit Transfer(_from, _to, _tokenId);
     }
 }
