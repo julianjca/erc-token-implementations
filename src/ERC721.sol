@@ -56,6 +56,9 @@ contract ERC721 {
         symbol = _symbol;
     }
 
+    /*///////////////////////////////////////////////////////////////
+                          EXTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
     function balanceOf(address account) external view returns (uint256) {
         return _balanceOf[account];
     }
@@ -130,6 +133,9 @@ contract ERC721 {
         transferFrom(from, to, tokenId);
     }
 
+    /*///////////////////////////////////////////////////////////////
+                          INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
     function _mint(address to, uint256 tokenId) internal virtual {
         if (to == address(0)) revert WrongAddress();
         if (_ownerOf[tokenId] != address(0)) revert TokenAlreadyMinted();
@@ -156,6 +162,18 @@ contract ERC721 {
         }
 
         emit Transfer(owner, address(0), tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        pure
+        virtual
+        returns (bool)
+    {
+        return
+            interfaceId == 0x01ffc9a7 || // ERC165 Interface ID for ERC165
+            interfaceId == 0x80ac58cd || // ERC165 Interface ID for ERC721
+            interfaceId == 0x5b5e139f; // ERC165 Interface ID for ERC721Metadata
     }
 }
 
