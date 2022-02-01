@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity ^0.8.6;
 
+// custom errors
+error NotAuthorized();
+
 /// @notice an opinionated ERC721 implementation
 /// @title ERC721
 /// @author Julian <juliancanderson@gmail.com>
@@ -8,15 +11,16 @@ contract ERC721 {
     /*///////////////////////////////////////////////////////////////
                             ERC20 METADATA
     //////////////////////////////////////////////////////////////*/
-    string private name;
-    string private symbol;
-    uint256 private totalSupply;
+    string public name;
+    string public symbol;
 
     /*///////////////////////////////////////////////////////////////
                                 MAPPINGS
     //////////////////////////////////////////////////////////////*/
     mapping(address => uint256) private _balanceOf;
-    mapping(address => mapping(address => uint256)) private _allowances;
+    mapping(uint256 => address) private _ownerOf;
+    mapping(uint256 => address) public isApproved;
+    mapping(address => mapping(address => bool)) public isApprovedForAll;
 
     // https://ethereum.stackexchange.com/questions/8658/what-does-the-indexed-keyword-do
     // The indexed parameters for logged events will
@@ -25,11 +29,20 @@ contract ERC721 {
     /*///////////////////////////////////////////////////////////////
                                 EVENTS
     //////////////////////////////////////////////////////////////*/
-    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Transfer(
+        address indexed _from,
+        address indexed _to,
+        uint256 indexed _tokenId
+    );
     event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
+        address indexed _owner,
+        address indexed _approved,
+        uint256 indexed _tokenId
+    );
+    event ApprovalForAll(
+        address indexed _owner,
+        address indexed _operator,
+        bool _approved
     );
 
     /*///////////////////////////////////////////////////////////////
@@ -40,7 +53,25 @@ contract ERC721 {
         symbol = _symbol;
     }
 
-    function balanceOf(address account) public view returns (uint256) {
+    function balanceOf(address account) external view returns (uint256) {
         return _balanceOf[account];
+    }
+
+    function ownerOf(uint256 _tokenId) external view returns (address) {
+        return _ownerOf[_tokenId];
+    }
+
+    function approve(address _approved, uint256 _tokenId) external payable {
+        address tokenOwner = _ownerOf[_tokenId];
+
+        if (
+            tokenOwner != msg.sender || !isApprovedForAll[_approved][msg.sender]
+        ) {
+            revert NotAuthorized();
+        }
+
+        isApproved[_tokenId] = _approved;
+
+        emit Approval(tokenOwner, _approved, _tokenId);
     }
 }
